@@ -1,0 +1,8 @@
+PLANIFICADOR DIARIO (app instalable)
+
+1. En GitHub, crea un repositorio publico (por ejemplo: planificador).
+2. Sube TODO el contenido de esta carpeta a la raiz del repositorio
+   (index.html, sw.js, manifest.webmanifest, la carpeta icons y .nojekyll).
+3. Settings > Pages > Source: "Deploy from a branch" > Branch: main, carpeta /(root) > Save.
+4. Espera 1-2 minutos y abre https://TU-USUARIO.github.io/planificador/ en Chrome del telefono.
+5. Menu (tres puntos) > "Instalar app" o "Anadir a pantalla de inicio".

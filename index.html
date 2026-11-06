@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Planificador diario</title>
+<meta name="theme-color" content="#5B6CFF">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Planificador">
+
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  try{ if(matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark'); }catch(e){}
+</script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+  tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: {
+    display: ['"Bricolage Grotesque"', 'Georgia', 'serif'],
+    sans: ['Figtree', 'system-ui', 'sans-serif'] } } } };
+</script>
+<style>
+  :root{ box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); color-scheme:light; }
+  :root.dark{ color-scheme:dark; }
+  html{ scroll-padding-top:env(safe-area-inset-top,0px); }
+  body{ min-height:100vh; font-family:Figtree,system-ui,sans-serif; background-color:#e8eefc; background-attachment:fixed;
+    background-image:radial-gradient(60rem 40rem at 8% -10%,rgba(129,140,248,.60),transparent 60%),radial-gradient(50rem 40rem at 98% 4%,rgba(244,114,182,.42),transparent 60%),radial-gradient(55rem 45rem at 70% 108%,rgba(45,212,191,.42),transparent 60%),radial-gradient(40rem 30rem at 0% 92%,rgba(251,191,36,.30),transparent 60%); }
+  html.dark body{ background-color:#090c18;
+    background-image:radial-gradient(60rem 40rem at 8% -10%,rgba(99,102,241,.42),transparent 60%),radial-gradient(50rem 40rem at 98% 4%,rgba(236,72,153,.26),transparent 60%),radial-gradient(55rem 45rem at 70% 108%,rgba(20,184,166,.28),transparent 60%),radial-gradient(40rem 30rem at 0% 92%,rgba(245,158,11,.16),transparent 60%); }
+
+  /* Liquid glass */
+  .glass{ background:linear-gradient(135deg,rgba(255,255,255,.64),rgba(255,255,255,.28)); -webkit-backdrop-filter:blur(24px) saturate(170%); backdrop-filter:blur(24px) saturate(170%);
+    border:1px solid rgba(255,255,255,.72); box-shadow:0 10px 40px rgba(60,70,160,.16),inset 0 1.5px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.3); }
+  html.dark .glass{ background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(255,255,255,.04)); border-color:rgba(255,255,255,.18);
+    box-shadow:0 10px 40px rgba(0,0,0,.5),inset 0 1.5px 0 rgba(255,255,255,.24),inset 0 -1px 0 rgba(255,255,255,.04); }
+  .glass-in{ background:rgba(255,255,255,.44); border:1px solid rgba(255,255,255,.7); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); box-shadow:inset 0 1px 0 rgba(255,255,255,.8); }
+  html.dark .glass-in{ background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.13); box-shadow:inset 0 1px 0 rgba(255,255,255,.1); }
+  .g-btn{ background:rgba(255,255,255,.44); border:1px solid rgba(255,255,255,.7); box-shadow:inset 0 1px 0 rgba(255,255,255,.8); transition:background .2s, transform .2s; }
+  .g-btn:hover{ background:rgba(255,255,255,.75); }
+  html.dark .g-btn{ background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.14); box-shadow:inset 0 1px 0 rgba(255,255,255,.12); }
+  html.dark .g-btn:hover{ background:rgba(255,255,255,.17); }
+  .g-on{ background:linear-gradient(180deg,#8392ff,#5B6CFF); color:#fff; border:1px solid rgba(255,255,255,.55); box-shadow:0 6px 18px rgba(91,108,255,.45),inset 0 1px 0 rgba(255,255,255,.6); }
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+    .glass{ background:rgba(255,255,255,.93); } html.dark .glass{ background:rgba(28,32,50,.96); }
+  }
+  button:focus-visible,input:focus-visible{ outline:2px solid #5B6CFF; outline-offset:2px; }
+  button:disabled{ opacity:.5; pointer-events:none; }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect } = React;
+
+/* Iconos Lucide (rutas SVG en línea) */
+const P = {
+  check:['M20 6 9 17l-5-5'], trash:['M3 6h18','M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6','M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2'],
+  plus:['M5 12h14','M12 5v14'],
+  sun:['M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z','M12 2v2','M12 20v2','m4.93 4.93 1.41 1.41','m17.66 17.66 1.41 1.41','M2 12h2','M20 12h2','m6.34 17.66-1.41 1.41','m19.07 4.93-1.41 1.41'],
+  moon:['M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z'],
+  cal:['M8 2v4','M16 2v4','M3 10h18','M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z'],
+  left:['m15 18-6-6 6-6'], right:['m9 18 6-6-6-6'],
+  list:['M8 6h13','M8 12h13','M8 18h13','M3 6h.01','M3 12h.01','M3 18h.01']
+};
+const Icon = ({ n, s = 18, cls = '' }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cls} aria-hidden="true">
+    {P[n].map((d, i) => <path key={i} d={d} />)}
+  </svg>
+);
+
+/* Fechas y persistencia */
+const KEY = 'planificador:v1';
+const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const pad = n => String(n).padStart(2, '0');
+const fmtKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseKey = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const longDate = k => { const d = parseKey(k); return `${DAYS[d.getDay()]}, ${d.getDate()} de ${MONTHS[d.getMonth()]} de ${d.getFullYear()}`; };
+const emptyDay = () => ({ tasks: [], blocks: {} });
+const getDay = (s, k) => s.days[k] || emptyDay();
+const load = () => { try { const r = localStorage.getItem(KEY); if (r) { const p = JSON.parse(r); if (p && p.days) return p; } } catch (e) {} return { days: {} }; };
+
+const card = 'glass rounded-[28px]';
+const PRIO = {
+  Alta:  { chip: 'bg-rose-200/70 text-rose-900 dark:bg-rose-500/25 dark:text-rose-100', dot: 'bg-rose-500', bar: 'bg-rose-400', ord: 0 },
+  Media: { chip: 'bg-amber-200/70 text-amber-900 dark:bg-amber-500/25 dark:text-amber-100', dot: 'bg-amber-400', bar: 'bg-amber-400', ord: 1 },
+  Baja:  { chip: 'bg-sky-200/70 text-sky-900 dark:bg-sky-500/25 dark:text-sky-100', dot: 'bg-sky-400', bar: 'bg-sky-400', ord: 2 }
+};
+const COLORS = {
+  sky:   'bg-sky-200/60 text-sky-950 ring-sky-300/80 dark:bg-sky-400/20 dark:text-sky-100 dark:ring-sky-300/30',
+  mint:  'bg-emerald-200/60 text-emerald-950 ring-emerald-300/80 dark:bg-emerald-400/20 dark:text-emerald-100 dark:ring-emerald-300/30',
+  lilac: 'bg-violet-200/60 text-violet-950 ring-violet-300/80 dark:bg-violet-400/20 dark:text-violet-100 dark:ring-violet-300/30',
+  peach: 'bg-orange-200/60 text-orange-950 ring-orange-300/80 dark:bg-orange-400/20 dark:text-orange-100 dark:ring-orange-300/30'
+};
+const SWATCH = { sky: 'bg-sky-400', mint: 'bg-emerald-400', lilac: 'bg-violet-400', peach: 'bg-orange-400' };
+const HOURS = Array.from({ length: 17 }, (_, i) => i + 6);
+const fmtHour = h => h === 12 ? '12:00 PM' : h < 12 ? `${h}:00 AM` : `${h - 12}:00 PM`;
+const muted = 'text-slate-600 dark:text-slate-300';
+
+function Ring({ pct }) {
+  const C = 2 * Math.PI * 24;
+  return (
+    <div className="relative h-16 w-16 shrink-0" role="progressbar" aria-label="Progreso del día" aria-valuenow={pct} aria-valuemin="0" aria-valuemax="100">
+      <svg viewBox="0 0 56 56" className="h-full w-full -rotate-90">
+        <circle cx="28" cy="28" r="24" fill="none" strokeWidth="6" className="stroke-white/70 dark:stroke-white/15" />
+        <circle cx="28" cy="28" r="24" fill="none" strokeWidth="6" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - pct / 100)}
+          className={pct === 100 ? 'stroke-emerald-500' : 'stroke-indigo-500'} style={{ transition: 'stroke-dashoffset .5s ease' }} />
+      </svg>
+      <div className="absolute inset-0 grid place-items-center font-display font-bold text-sm">{pct}%</div>
+    </div>
+  );
+}
+
+function Agenda({ blocks, setBlocks, isToday }) {
+  const [edit, setEdit] = useState(null);
+  const [draft, setDraft] = useState({ text: '', color: 'sky' });
+  const [now, setNow] = useState(new Date().getHours());
+  useEffect(() => { const t = setInterval(() => setNow(new Date().getHours()), 60000); return () => clearInterval(t); }, []);
+  const open = h => { setEdit(h); setDraft(blocks[h] || { text: '', color: 'sky' }); };
+  const save = () => {
+    setBlocks(b => { const n = { ...b }; if (draft.text.trim()) n[edit] = { ...draft, text: draft.text.trim() }; else delete n[edit]; return n; });
+    setEdit(null);
+  };
+  const remove = () => { setBlocks(b => { const n = { ...b }; delete n[edit]; return n; }); setEdit(null); };
+  return (
+    <section className={`${card} p-5 sm:p-6`} aria-label="Bloques de tiempo">
+      <div className="flex items-baseline justify-between mb-4">
+        <h2 className="font-display text-xl font-bold">Agenda Diaria</h2>
+        <span className={`text-sm ${muted}`}>{Object.keys(blocks).length} bloques planificados</span>
+      </div>
+      <ul className="space-y-1.5">
+        {HOURS.map(h => {
+          const b = blocks[h]; const isNow = isToday && h === now;
+          return (
+            <li key={h} className="flex gap-3 items-stretch">
+              <div className={`w-20 shrink-0 pt-2.5 text-sm text-right tabular-nums ${isNow ? 'font-semibold text-indigo-600 dark:text-indigo-300' : muted}`}>{fmtHour(h)}</div>
+              <div className="flex-1 min-w-0">
+                {edit === h ? (
+                  <div className="glass-in rounded-2xl p-3 !border-indigo-400 ring-2 ring-indigo-400/60">
+                    <input autoFocus value={draft.text} onChange={e => setDraft({ ...draft, text: e.target.value })}
+                      onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEdit(null); }}
+                      placeholder="¿Qué harás en este bloque?" className="glass-in w-full rounded-xl px-3 py-2 text-sm placeholder:text-slate-500 dark:placeholder:text-slate-400" />
+                    <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                      {Object.keys(COLORS).map(c => (
+                        <button key={c} aria-label={`Color ${c}`} onClick={() => setDraft({ ...draft, color: c })}
+                          className={`h-6 w-6 rounded-full ${SWATCH[c]} shadow-inner ${draft.color === c ? 'ring-2 ring-offset-2 ring-slate-700 dark:ring-white ring-offset-transparent' : ''}`} />
+                      ))}
+                      <div className="ml-auto flex gap-2">
+                        {b && <button onClick={remove} className="px-3 py-1.5 text-sm rounded-xl text-rose-700 dark:text-rose-300 hover:bg-rose-500/15">Eliminar</button>}
+                        <button onClick={() => setEdit(null)} className="px-3 py-1.5 text-sm rounded-xl hover:bg-white/50 dark:hover:bg-white/10">Cancelar</button>
+                        <button onClick={save} className="g-on px-3.5 py-1.5 text-sm rounded-xl font-medium">Guardar bloque</button>
+                      </div>
+                    </div>
+                  </div>
+                ) : b ? (
+                  <button onClick={() => open(h)} className={`w-full text-left rounded-2xl px-4 py-2.5 text-sm font-medium ring-1 shadow-sm backdrop-blur-md ${COLORS[b.color]}`}>{b.text}</button>
+                ) : (
+                  <button onClick={() => open(h)} className={`w-full flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm border border-dashed ${isNow ? 'border-indigo-400 text-indigo-700 dark:text-indigo-200 bg-white/30 dark:bg-white/5' : 'border-slate-400/40 dark:border-white/15 text-slate-500 dark:text-slate-400'} hover:bg-white/50 dark:hover:bg-white/10`}>
+                    <Icon n="plus" s={14} /> {isNow ? 'Ahora: añade una actividad' : 'Añadir actividad'}
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/* Calendario mensual compacto del panel derecho */
+function MiniCal({ store, cursor, setCursor, sel, today, pick }) {
+  const { y, m } = cursor;
+  const first = (new Date(y, m, 1).getDay() + 6) % 7;
+  const count = new Date(y, m + 1, 0).getDate();
+  const go = n => { const d = new Date(y, m + n, 1); setCursor({ y: d.getFullYear(), m: d.getMonth() }); };
+  const cells = [...Array(first).fill(null), ...Array.from({ length: count }, (_, i) => i + 1)];
+  return (
+    <section className={`${card} p-5`} aria-label="Calendario del mes">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-display text-xl font-bold">{MONTHS[m]} {y}</h2>
+        <div className="flex gap-1.5">
+          <button onClick={() => go(-1)} aria-label="Mes anterior" className="g-btn h-9 w-9 grid place-items-center rounded-xl"><Icon n="left" s={16} /></button>
+          <button onClick={() => go(1)} aria-label="Mes siguiente" className="g-btn h-9 w-9 grid place-items-center rounded-xl"><Icon n="right" s={16} /></button>
+        </div>
+      </div>
+      <div className={`grid grid-cols-7 gap-1 text-center text-xs mb-1.5 ${muted}`}>
+        {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(d => <div key={d}>{d}</div>)}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((n, i) => {
+          if (!n) return <div key={'b' + i} />;
+          const k = `${y}-${pad(m + 1)}-${pad(n)}`;
+          const ts = (store.days[k] || {}).tasks || [];
+          const full = ts.length > 0 && ts.every(t => t.done);
+          const top = ['Alta', 'Media', 'Baja'].find(p => ts.some(t => !t.done && t.prio === p));
+          const isSel = k === sel, isToday = k === today;
+          return (
+            <button key={k} onClick={() => pick(k)} aria-pressed={isSel} aria-label={longDate(k)}
+              className={`relative h-10 rounded-xl text-sm ${isSel ? 'g-on font-semibold' : 'g-btn'} ${full && !isSel ? 'ring-2 ring-emerald-400' : ''} ${isToday && !isSel ? 'font-bold text-indigo-700 dark:text-indigo-300' : ''}`}>
+              {n}
+              {top && <span className={`absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full ${PRIO[top].dot}`} />}
+            </button>
+          );
+        })}
+      </div>
+      <p className={`text-xs mt-3 ${muted}`}>Toca un día para verlo en la agenda. El punto marca la prioridad más alta pendiente.</p>
+    </section>
+  );
+}
+
+function Tasks({ tasks, setTasks }) {
+  const [text, setText] = useState('');
+  const [prio, setPrio] = useState('Media');
+  const add = () => { const t = text.trim(); if (!t) return; setTasks(a => [...a, { id: Date.now(), text: t, prio, done: false }]); setText(''); };
+  const sorted = [...tasks].sort((a, b) => a.done - b.done || PRIO[a.prio].ord - PRIO[b.prio].ord);
+  return (
+    <section className={`${card} p-5 sm:p-6`} aria-label="Lista de tareas">
+      <h2 className="font-display text-xl font-bold mb-4">Tareas</h2>
+      <div className="flex gap-2">
+        <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()} placeholder="Nueva tarea"
+          className="glass-in flex-1 min-w-0 rounded-xl px-3 py-2 text-sm placeholder:text-slate-500 dark:placeholder:text-slate-400" />
+        <button onClick={add} aria-label="Añadir tarea" className="g-on rounded-xl px-3"><Icon n="plus" /></button>
+      </div>
+      <div className="flex gap-1.5 mt-2.5" role="group" aria-label="Prioridad">
+        {Object.keys(PRIO).map(p => (
+          <button key={p} onClick={() => setPrio(p)} className={`px-3 py-1 rounded-full text-xs font-medium ${prio === p ? PRIO[p].chip + ' ring-1 ring-current' : muted + ' hover:bg-white/50 dark:hover:bg-white/10'}`}>{p}</button>
+        ))}
+      </div>
+      <ul className="mt-4 space-y-2">
+        {sorted.length === 0 && <li className={`text-sm py-4 text-center ${muted}`}>Sin tareas para este día. Escribe la primera arriba.</li>}
+        {sorted.map(t => (
+          <li key={t.id} className="glass-in flex items-center gap-3 rounded-2xl px-3 py-2.5">
+            <button onClick={() => setTasks(a => a.map(x => x.id === t.id ? { ...x, done: !x.done } : x))} aria-label={t.done ? 'Marcar pendiente' : 'Marcar completada'}
+              className={`h-6 w-6 shrink-0 rounded-full grid place-items-center ring-2 ${t.done ? 'bg-emerald-500 ring-emerald-500 text-white' : 'ring-slate-400/60 dark:ring-slate-500 text-transparent hover:text-slate-400'}`}><Icon n="check" s={14} /></button>
+            <span className={`flex-1 text-sm ${t.done ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>{t.text}</span>
+            <span className={`text-xs px-2 py-0.5 rounded-full ${PRIO[t.prio].chip}`}>{t.prio}</span>
+            <button onClick={() => setTasks(a => a.filter(x => x.id !== t.id))} aria-label="Eliminar tarea" className="text-slate-500 hover:text-rose-500"><Icon n="trash" s={16} /></button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function Priorities({ tasks, setTasks }) {
+  const pending = tasks.filter(t => !t.done).length;
+  return (
+    <section className={`${card} p-5 sm:p-6`} aria-label="Prioridades">
+      <div className="flex items-baseline justify-between mb-4">
+        <h2 className="font-display text-xl font-bold">Prioridades</h2>
+        <span className={`text-sm ${muted}`}>{pending} {pending === 1 ? 'pendiente' : 'pendientes'}</span>
+      </div>
+      <div className="space-y-3">
+        {Object.keys(PRIO).map(p => {
+          const list = tasks.filter(t => t.prio === p);
+          const open = list.filter(t => !t.done);
+          const done = list.length - open.length;
+          const w = list.length ? Math.round(done / list.length * 100) : 0;
+          return (
+            <div key={p} className="glass-in rounded-2xl p-3.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-2 font-medium"><i className={`h-2.5 w-2.5 rounded-full ${PRIO[p].dot}`} />{p}</span>
+                <span className={`tabular-nums ${muted}`}>{done}/{list.length}</span>
+              </div>
+              <div className="mt-2 h-2 rounded-full bg-white/60 dark:bg-white/10 overflow-hidden">
+                <div className={`h-full rounded-full ${PRIO[p].bar}`} style={{ width: w + '%', transition: 'width .5s ease' }} />
+              </div>
+              {list.length === 0 ? <p className={`text-xs mt-2 ${muted}`}>Sin tareas con esta prioridad.</p> : open.length === 0 ? <p className="text-xs mt-2 text-emerald-700 dark:text-emerald-300">Todo completado.</p> : (
+                <ul className="mt-2 space-y-1">
+                  {open.slice(0, 3).map(t => (
+                    <li key={t.id} className="flex items-center gap-2 text-sm">
+                      <button onClick={() => setTasks(a => a.map(x => x.id === t.id ? { ...x, done: true } : x))} aria-label={`Completar: ${t.text}`}
+                        className="h-5 w-5 shrink-0 rounded-full ring-2 ring-slate-400/60 dark:ring-slate-500 hover:bg-emerald-400/40" />
+                      <span className="truncate">{t.text}</span>
+                    </li>
+                  ))}
+                  {open.length > 3 && <li className={`text-xs pl-7 ${muted}`}>+{open.length - 3} más</li>}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function Month({ store, cursor, setCursor, sel, today, pick }) {
+  const { y, m } = cursor;
+  const first = (new Date(y, m, 1).getDay() + 6) % 7;
+  const count = new Date(y, m + 1, 0).getDate();
+  const go = n => { const d = new Date(y, m + n, 1); setCursor({ y: d.getFullYear(), m: d.getMonth() }); };
+  const cells = [...Array(first).fill(null), ...Array.from({ length: count }, (_, i) => i + 1)];
+  return (
+    <section className={`${card} p-4 sm:p-6`} aria-label="Vista mensual">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-display text-2xl font-bold">{MONTHS[m]} {y}</h2>
+        <div className="flex gap-1.5">
+          <button onClick={() => go(-1)} aria-label="Mes anterior" className="g-btn h-10 w-10 grid place-items-center rounded-xl"><Icon n="left" /></button>
+          <button onClick={() => go(1)} aria-label="Mes siguiente" className="g-btn h-10 w-10 grid place-items-center rounded-xl"><Icon n="right" /></button>
+        </div>
+      </div>
+      <div className={`grid grid-cols-7 gap-1.5 sm:gap-2 text-center text-xs mb-2 ${muted}`}>
+        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(d => <div key={d}>{d}</div>)}
+      </div>
+      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+        {cells.map((n, i) => {
+          if (!n) return <div key={'b' + i} />;
+          const k = `${y}-${pad(m + 1)}-${pad(n)}`;
+          const ts = (store.days[k] || {}).tasks || [];
+          const total = ts.length, done = ts.filter(t => t.done).length;
+          const full = total > 0 && done === total;
+          const pend = p => ts.some(t => !t.done && t.prio === p);
+          const isSel = k === sel, isToday = k === today;
+          return (
+            <button key={k} onClick={() => pick(k)} aria-label={`${longDate(k)}: ${total ? `${done} de ${total} tareas completadas` : 'sin tareas'}`}
+              className={`g-btn h-16 sm:h-24 rounded-2xl p-1.5 sm:p-2 flex flex-col items-start justify-between text-left ${full ? 'ring-2 ring-emerald-400 !bg-emerald-300/30' : ''} ${isSel ? 'outline outline-2 outline-offset-2 outline-indigo-500' : ''}`}>
+              <span className={`text-sm font-semibold h-6 min-w-6 px-1 grid place-items-center rounded-full ${isToday ? 'g-on' : ''}`}>{n}</span>
+              <span className="flex items-center gap-1 w-full">
+                {full ? <span className="text-emerald-600 dark:text-emerald-300"><Icon n="check" s={16} /></span> : (
+                  <>
+                    {pend('Alta') && <span className="h-2 w-2 rounded-full bg-rose-500" />}
+                    {pend('Media') && <span className="h-2 w-2 rounded-full bg-amber-400" />}
+                    {pend('Baja') && <span className="h-2 w-2 rounded-full bg-sky-400" />}
+                  </>
+                )}
+                {total > 0 && <span className={`ml-auto hidden sm:inline text-xs tabular-nums ${muted}`}>{done}/{total}</span>}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className={`flex flex-wrap gap-x-5 gap-y-2 mt-5 text-sm ${muted}`}>
+        <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-rose-500" />Alta pendiente</span>
+        <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-amber-400" />Media pendiente</span>
+        <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-sky-400" />Baja pendiente</span>
+        <span className="flex items-center gap-2"><i className="h-3 w-3 rounded-full ring-2 ring-emerald-400" />Día completado</span>
+      </div>
+    </section>
+  );
+}
+
+function App() {
+  const todayKey = fmtKey(new Date());
+  const [dark, setDark] = useState(document.documentElement.classList.contains('dark'));
+  const [store, setStore] = useState(load);
+  const [sel, setSel] = useState(todayKey);
+  const [view, setView] = useState('day');
+  const [cursor, setCursor] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
+  useEffect(() => { document.documentElement.classList.toggle('dark', dark); }, [dark]);
+  useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }, [store]);
+
+  const day = getDay(store, sel);
+  const setF = (f, v) => setStore(s => {
+    const d = getDay(s, sel);
+    return { ...s, days: { ...s.days, [sel]: { ...d, [f]: typeof v === 'function' ? v(d[f]) : v } } };
+  });
+  const total = day.tasks.length, completed = day.tasks.filter(t => t.done).length;
+  const pct = total ? Math.round(completed / total * 100) : 0;
+
+  const syncCursor = k => { const d = parseKey(k); setCursor({ y: d.getFullYear(), m: d.getMonth() }); };
+  const pickDay = k => { setSel(k); syncCursor(k); setView('day'); };
+  const shift = n => { const d = parseKey(sel); d.setDate(d.getDate() + n); pickDay(fmtKey(d)); };
+  const show = v => { if (v === 'month') syncCursor(sel); setView(v); };
+  const nav = 'g-btn h-11 w-11 grid place-items-center rounded-2xl';
+  const cal = { store, cursor, setCursor, sel, today: todayKey, pick: pickDay };
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 text-slate-800 dark:text-slate-100">
+      <header className={`${card} flex flex-wrap items-center gap-4 p-4 sm:p-5 mb-5`}>
+        <Ring pct={pct} />
+        <div className="flex-1 min-w-[220px]">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">{longDate(sel)}</h1>
+          <p className={`text-sm mt-0.5 ${muted}`}>{total === 0 ? 'Sin tareas todavía' : `${completed} completadas · ${total - completed} pendientes`}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {view === 'day' && <button onClick={() => shift(-1)} aria-label="Día anterior" className={nav}><Icon n="left" /></button>}
+          <button onClick={() => pickDay(todayKey)} disabled={sel === todayKey && view === 'day'} className="g-btn h-11 px-4 rounded-2xl text-sm font-medium">Hoy</button>
+          {view === 'day' && <button onClick={() => shift(1)} aria-label="Día siguiente" className={nav}><Icon n="right" /></button>}
+          <button onClick={() => setDark(d => !d)} aria-label="Cambiar entre modo claro y oscuro" className={nav}><Icon n={dark ? 'sun' : 'moon'} s={20} /></button>
+        </div>
+      </header>
+
+      <div className="glass inline-flex rounded-2xl p-1 mb-5" role="tablist" aria-label="Vista">
+        {[['day', 'Vista Diaria', 'list'], ['month', 'Vista Mensual', 'cal']].map(([v, label, ic]) => (
+          <button key={v} role="tab" aria-selected={view === v} onClick={() => show(v)}
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-sm font-medium ${view === v ? 'g-on' : muted + ' hover:bg-white/50 dark:hover:bg-white/10'}`}>
+            <Icon n={ic} s={16} /> {label}
+          </button>
+        ))}
+      </div>
+
+      {view === 'month' && <Month {...cal} />}
+
+      <div className={`grid gap-4 lg:grid-cols-5 items-start ${view === 'month' ? 'hidden' : ''}`}>
+        <div className="lg:col-span-3"><Agenda key={sel} blocks={day.blocks} setBlocks={v => setF('blocks', v)} isToday={sel === todayKey} /></div>
+        <div className="lg:col-span-2 space-y-4">
+          <MiniCal {...cal} />
+          <Tasks key={sel} tasks={day.tasks} setTasks={v => setF('tasks', v)} />
+          <Priorities tasks={day.tasks} setTasks={v => setF('tasks', v)} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('./sw.js').catch(function () {}); });
+  }
+</script>
+</body>
+</html>
